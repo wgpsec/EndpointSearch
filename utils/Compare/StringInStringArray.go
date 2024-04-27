@@ -10,3 +10,15 @@ func IsStringInStringArray(str string, strArray []string) bool {
 	}
 	return false
 }
+
+func RemoveDuplicates(reqList []string) []string {
+	encountered := map[string]bool{}
+	var result []string
+	for v := range reqList {
+		if !encountered[reqList[v]] {
+			encountered[reqList[v]] = true
+			result = append(result, reqList[v])
+		}
+	}
+	return result
+}
