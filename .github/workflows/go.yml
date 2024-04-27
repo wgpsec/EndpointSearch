@@ -1,0 +1,81 @@
+# This workflow will build a golang project
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-go
+
+name: Go
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+
+jobs:
+  build:
+    runs-on: ubuntu-20.04
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up Go
+      uses: actions/setup-go@v4
+      with:
+        go-version: '1.20.1'
+        
+    - name: Install dependencies
+      run: |
+          go mod tidy
+    - name: Get Set
+      run: |
+          go env -w GO111MODULE=on
+          go env -w CGO_ENABLED=0
+    - name: Checkout code
+      uses: actions/checkout@v2
+      with:
+        fetch-depth: 0 # 拉取所有历史记录
+
+    - name: Build LINUX
+      run: |
+        env GOOS=linux GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o EndpointSearch_linux_amd64 main/main.go
+        env GOOS=linux GOARCH=arm64 go build -trimpath -ldflags "-s -w" -o EndpointSearch_linux_arm64 main/main.go
+    - name: Build WINDOWS
+      run: |
+        env GOOS=windows GOARCH=amd64 go build -trimpath -ldflags "-s -w" -o EndpointSearch_windows_amd64.exe main/main.go
+        env GOOS=windows GOARCH=386 go build -trimpath -ldflags "-s -w" -o EndpointSearch_windows_386.exe main/main.go
+    - name: Create Zip Archive
+      run: |
+        zip -r Serverless_PortScan_linux_amd64.zip EndpointSearch_linux_amd64
+        zip -r Serverless_PortScan_linux_arm64.zip EndpointSearch_linux_arm64
+        zip -r Serverless_PortScan_windows_amd64.zip EndpointSearch_windows_amd64.exe
+        zip -r Serverless_PortScan_windows_386.zip EndpointSearch_windows_386.exe
+        
+    - name: Fetch all tags
+      run: git fetch --depth=1 origin +refs/tags/*:refs/tags/*
+      
+    - name: Get latest tag
+      id: latest-tag
+      run: |
+        # 获取最新的 tag
+        LATEST_TAG=$(git describe --tags `git rev-list --tags --max-count=1`)
+        echo "Latest tag: $LATEST_TAG"
+        echo ::set-output name=tag::${LATEST_TAG}
+    - name: Increment tag
+      id: increment-tag
+      run: |
+        # 解析 tag 并递增
+        LATEST_TAG=${{ steps.latest-tag.outputs.tag }}
+        BASE_TAG=$(echo "$LATEST_TAG" | sed 's/\(.*\)\.\([0-9]*\)$/\1/')
+        VERSION=$(echo "$LATEST_TAG" | sed 's/.*\.\([0-9]*\)$/\1/')
+        NEW_VERSION=$((VERSION + 1))
+        NEW_TAG="$BASE_TAG.$NEW_VERSION"
+        echo ::set-output name=new-tag::${NEW_TAG}
+        echo "NEW_TAG=$NEW_TAG" >> $GITHUB_ENV
+    - name: Create and Upload Release
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |
+        # 创建 Release
+        gh release create $NEW_TAG --title "Release $NEW_TAG" --notes "github action自动构建"
+        
+        # 上传当前目录下所有 zip 文件为 Release 附件
+        for zip_file in *.zip; do
+          gh release upload $NEW_TAG "$zip_file" --clobber
+        done
