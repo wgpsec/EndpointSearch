@@ -1,4 +1,4 @@
-module github.com/esonhugh/go-cli-template-v2
+module github.com/wgpsec/EndpointSearch
 
 go 1.19
 

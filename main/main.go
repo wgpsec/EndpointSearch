@@ -1,19 +1,29 @@
 package main
 
 import (
-	"github.com/esonhugh/go-cli-template-v2/cmd"
-	_ "github.com/esonhugh/go-cli-template-v2/cmd/version"
-	"github.com/esonhugh/go-cli-template-v2/internal/config"
-	"github.com/esonhugh/go-cli-template-v2/internal/database"
-	"github.com/esonhugh/go-cli-template-v2/internal/log"
+	"errors"
+	"fmt"
+	"github.com/wgpsec/EndpointSearch/cmd"
+	"github.com/wgpsec/EndpointSearch/internal/config"
+	"github.com/wgpsec/EndpointSearch/pkg"
+	"github.com/wgpsec/EndpointSearch/utils/Error"
+	"github.com/wgpsec/EndpointSearch/utils/File"
+	"strings"
 )
 
 func init() {
-	log.Init("info")
-	config.Init("config.yaml")
-	_ = database.Init("db.sqlite3")
+	configFile := pkg.GetPwd()
+	configFile = strings.Join([]string{configFile, "/config.json"}, "")
+	_, err := File.FileCreateIfNonExist(configFile)
+	Error.HandleFatal(err)
+	config.Init(configFile)
+	if config.C.CloudEndpoint == "" || config.C.Mode == "" {
+		Error.HandleFatal(errors.New("请配置config.json"))
+		return
+	}
 }
 
 func main() {
+	fmt.Println(cmd.RootCmd.Long)
 	cmd.Execute()
 }
