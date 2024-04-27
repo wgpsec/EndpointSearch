@@ -15,6 +15,8 @@ CloudEndpoint 为枚举的端点，Mode是端点与域名的连接方式
 
 例如输入域名 example.com，则会枚举 ossexample.com, oss-example.com...
 
+CloudEopint 可参考我的另一个字典项目: https://github.com/shadowabi/S-BlastingDictionary/blob/main/CloudEndpoint.txt
+
 ## 用法
 ```
 Usage:
