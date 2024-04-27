@@ -3,9 +3,9 @@ EndpointSearch 是一个探测云服务 endpoint 的扫描器，主要用于嗅�
 
 ## 安装
 
-下载release中的文件
+下载release中的二进制文件使用
 
-使用Makefile进行编译
+或使用Makefile进行编译二进制文件后使用
 
 ## 配置
 当首次运行 EndpointSearch 时，会检测 config.json 文件是否存在，不存在则会自动创建
