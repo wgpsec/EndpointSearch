@@ -1,6 +1,12 @@
 # EndpointSearch
 EndpointSearch 是一个探测云服务 endpoint 的扫描器，主要用于嗅探私有云的 endpoint 地址
 
+## 安装
+
+下载release中的文件
+
+使用Makefile进行编译
+
 ## 配置
 当首次运行 EndpointSearch 时，会检测 config.json 文件是否存在，不存在则会自动创建
 
