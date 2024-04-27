@@ -1,5 +1,29 @@
-# EndpointSearch
-EndpointSearch 是一个探测云服务 endpoint 的扫描器，主要用于嗅探私有云的 endpoint 地址
+<p align="center">
+  <a href="https://github.com/wgpsec/ENScan_GO">
+    <img src="https://github.com/wgpsec/EndpointSearch/assets/16091665/9a26fcef-26fe-4f6b-8c8f-905cdd066296" alt="Logo" width="200" height="200">
+  </a>
+  <h3 align="center">Endpoint Search</h3>
+  <p align="center">
+    一个探测云服务 endpoint 的扫描器，主要用于嗅探私有云的 endpoint 地址
+    <br />
+          <br />
+<a href="https://github.com/wgpsec/ENScan_GO/stargazers"><img alt="GitHub stars" src="https://img.shields.io/github/stars/wgpsec/EndpointSearch"/></a>
+<a href="https://github.com/wgpsec/ENScan_GO/releases"><img alt="GitHub releases" src="https://img.shields.io/github/release/wgpsec/EndpointSearch"/></a>
+<a href="https://github.com/wgpsec/ENScan_GO/blob/main/LICENSE"><img alt="License" src="https://img.shields.io/badge/License-Apache%202.0-blue.svg"/></a>
+<a href="https://github.com/wgpsec/ENScan_GO/releases"><img alt="Downloads" src="https://img.shields.io/github/downloads/wgpsec/EndpointSearch/total?color=brightgreen"/></a>
+<a href="https://goreportcard.com/report/github.com/wgpsec/ENScan_GO"><img alt="Go Report Card" src="https://goreportcard.com/badge/github.com/wgpsec/EndpointSearch"/></a>
+<a href="https://twitter.com/wgpsec"><img alt="Twitter" src="https://img.shields.io/twitter/follow/wgpsec?label=Followers&style=social" /></a>
+<br>
+<br>
+<a href="https://github.com/wgpsec/EndpointSearch/discussions"><strong>探索更多Tricks »</strong></a>
+      <br/>
+    <br />
+    <a href="https://github.com/wgpsec/EndpointSearch/releases">下载程序</a>
+    ·
+    <a href="https://github.com/wgpsec/EndpointSearch/issues">反馈Bug</a>
+    ·
+    <a href="https://github.com/wgpsec/EndpointSearch/discussions">提交需求</a>
+  </p>
 
 ## 安装
 
