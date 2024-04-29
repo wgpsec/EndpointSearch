@@ -10,6 +10,7 @@ import (
 	"github.com/wgpsec/EndpointSearch/utils/Compare"
 	"github.com/wgpsec/EndpointSearch/utils/Error"
 	"os"
+	"strings"
 
 	cc "github.com/ivanpirog/coloredcobra"
 	"github.com/spf13/cobra"
@@ -45,6 +46,11 @@ EndpointSearch is a scanner that probes the endpoint of a cloud service
 		if define.Endpoint == "" {
 			define.Endpoint = config.C.CloudEndpoint
 		}
+		if define.Port == "" {
+			define.Port = config.C.PortList
+		}
+		portList := strings.Split(define.Port, ",")
+
 		var hostList []string
 		if define.File != "" {
 			hostList = pkg.ParseFileParameter(define.File)
@@ -54,10 +60,12 @@ EndpointSearch is a scanner that probes the endpoint of a cloud service
 		hostList = Compare.RemoveDuplicates(hostList)
 
 		reqList := pkg.ConvertToReqList(define.Endpoint, hostList...)
-		ipRecodList := pkg.SearchDomain(reqList...)
-		recordList := pkg.SearchSRVRecord(ipRecodList...)
+		ipRecordList := pkg.SearchDomain(reqList...)
+		recordList := pkg.SearchSRVRecord(ipRecordList...)
 
-		resultList := pkg.ParseRecordResult(recordList...)
+		client := pkg.GenerateHTTPClient(define.TimeOut)
+		resultList := pkg.SearchEndpoint(client, portList, recordList...)
+
 		resultList = Compare.RemoveDuplicates(resultList)
 		pkg.WriteToFile(resultList, define.OutPut)
 		fmt.Printf("[+] The output is in %s\n", define.OutPut)
@@ -73,7 +81,9 @@ func init() {
 	RootCmd.Flags().StringVarP(&define.File, "file", "f", "", "从文件中读取目标地址 (Input filename)")
 	RootCmd.Flags().StringVarP(&define.Url, "url", "u", "", "输入目标地址 (Input [domain|url])")
 	RootCmd.Flags().StringVarP(&define.Endpoint, "endpoint", "e", "", "输入")
+	RootCmd.Flags().IntVarP(&define.TimeOut, "timeout", "t", 2, "输入每个 http 请求的超时时间 (Enter the timeout period for every http request)")
 	RootCmd.Flags().StringVarP(&define.OutPut, "output", "o", "./result.txt", "输入结果文件输出的位置 (Enter the location of the scan result output)")
+	RootCmd.Flags().StringVarP(&define.Port, "port", "p", "", "输入需要被扫描的端口，逗号分割 (Enter the port to be scanned, separated by commas (,))")
 }
 
 func Execute() {

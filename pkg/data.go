@@ -3,8 +3,10 @@ package pkg
 import (
 	"bufio"
 	"fmt"
+	"github.com/wgpsec/EndpointSearch/define"
 	"github.com/wgpsec/EndpointSearch/internal/config"
 	"github.com/wgpsec/EndpointSearch/utils/Error"
+	"net/http"
 	"os"
 	"regexp"
 	"strings"
@@ -51,17 +53,29 @@ func ConvertToReqList(endpoint string, param ...string) (reqList []string) {
 	return reqList
 }
 
-func ParseRecordResult(recordList ...Record) (resultList []string) {
+func ParseRecordResult(recordList ...define.Record) (resultList []string) {
 	if len(recordList) != 0 {
 		for _, record := range recordList {
-			if len(record.srvRecords) != 0 {
-				for _, srv := range record.srvRecords {
+			if len(record.SrvRecords) != 0 {
+				for _, srv := range record.SrvRecords {
 					result := strings.Join([]string{srv.Target, ":", fmt.Sprintf("%v", srv.Port)}, "")
 					resultList = append(resultList, result)
 				}
 			}
-			resultList = append(resultList, record.svcDomain)
+			resultList = append(resultList, record.SvcDomain)
 		}
 	}
 	return resultList
+}
+
+func JudgeEndpoint(resp *http.Response) bool {
+	if resp == nil {
+		return false
+	}
+	contentType := resp.Header.Get("Content-Type")
+	isXML := strings.HasPrefix(contentType, "text/xml") || strings.HasPrefix(contentType, "application/xml")
+	if isXML {
+		return true
+	}
+	return false
 }

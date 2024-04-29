@@ -1,4 +1,0 @@
-{
-	"CloudEndpoint":"iam,ec2,s3,rds,eks,ecr,iap,compute,gce,ce,sqladmin,gsql,gke,gcr,pim,vm,storage,sql,aks,container,ram,ecs,oss,rds,ack,eci,cam,cvm,cos,cdb,tke,tcr,obs,cce,cci",
-	"Mode":",-,_,."
-}
