@@ -3,14 +3,15 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"os"
+	"strings"
+
 	"github.com/wgpsec/EndpointSearch/define"
 	"github.com/wgpsec/EndpointSearch/internal/config"
 	"github.com/wgpsec/EndpointSearch/internal/log"
 	"github.com/wgpsec/EndpointSearch/pkg"
 	"github.com/wgpsec/EndpointSearch/utils/Compare"
 	"github.com/wgpsec/EndpointSearch/utils/Error"
-	"os"
-	"strings"
 
 	cc "github.com/ivanpirog/coloredcobra"
 	"github.com/spf13/cobra"
@@ -80,7 +81,7 @@ func init() {
 	RootCmd.SetHelpFunc(customHelpFunc)
 	RootCmd.Flags().StringVarP(&define.File, "file", "f", "", "从文件中读取目标地址 (Input filename)")
 	RootCmd.Flags().StringVarP(&define.Url, "url", "u", "", "输入目标地址 (Input [domain|url])")
-	RootCmd.Flags().StringVarP(&define.Endpoint, "endpoint", "e", "", "输入")
+	RootCmd.Flags().StringVarP(&define.Endpoint, "endpoint", "e", "", "输入需要被枚举的 endpoint (Input [endpoint])")
 	RootCmd.Flags().IntVarP(&define.TimeOut, "timeout", "t", 2, "输入每个 http 请求的超时时间 (Enter the timeout period for every http request)")
 	RootCmd.Flags().StringVarP(&define.OutPut, "output", "o", "./result.txt", "输入结果文件输出的位置 (Enter the location of the scan result output)")
 	RootCmd.Flags().StringVarP(&define.Port, "port", "p", "", "输入需要被扫描的端口，逗号分割 (Enter the port to be scanned, separated by commas (,))")

@@ -70,7 +70,7 @@ Usage:
 
 Flags:
 
-  -e, --endpoint string   输入
+  -e, --endpoint string   输入需要被枚举的 endpoint (Input [endpoint])
   -f, --file string       从文件中读取目标地址 (Input filename)
   -h, --help              help for EndpointSearch
       --logLevel string   设置日志等级 (Set log level) [trace|debug|info|warn|error|fatal|panic] (default "info")
@@ -79,6 +79,9 @@ Flags:
   -t, --timeout int       输入每个 http 请求的超时时间 (Enter the timeout period for every http request) (default 3)
   -u, --url string        输入目标地址 (Input [domain|url])
 ```
+EndpointSearch 同样支持手动覆盖配置参数，-e 参数默认为配置中的 CloudEndpoint，-p 参数为配置中的 PortList
+
+当主动指定参数后，将不再使用配置文件中的默认值
 
 ## 功能列表
 
