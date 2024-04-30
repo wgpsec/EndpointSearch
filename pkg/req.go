@@ -10,8 +10,8 @@ import (
 )
 
 type ResponseData struct {
-	url  string
-	resp *http.Response
+	url         string
+	contentType string
 }
 
 func SearchDomain(domainList ...string) (ipRecordList []define.IPRecord) {
@@ -41,59 +41,65 @@ func SearchSRVRecord(ipRecordList ...define.IPRecord) (recordList []define.Recor
 	return recordList
 }
 
-func SearchEndpoint(client *http.Client, portList []string, recordList ...define.Record) (resultList []string) {
+func SearchEndpoint(client *http.Client, portList []string, recordList ...define.Record) (respList []ResponseData) {
 	if len(recordList) != 0 {
 		resultsChan := make(chan ResponseData, cap(recordList))
-		var wg sync.WaitGroup
+		var wg1 sync.WaitGroup
+		var wg2 sync.WaitGroup
 		for _, record := range recordList {
 			for _, port := range portList {
 				if len(record.SrvRecords) != 0 {
+					resultsChan2 := make(chan ResponseData, cap(record.SrvRecords))
 					for _, srv := range record.SrvRecords {
-						wg.Add(1)
 						go func(srv *net.SRV, port string, wg *sync.WaitGroup) {
 							defer wg.Done()
+							//logrus.Debug(srv.Target, ":", port, " Working")
 							requestStr := strings.Join([]string{srv.Target, ":", fmt.Sprintf("%v", srv.Port)}, "")
-							endpoint, resp := SendHttpRequest(client, requestStr)
-							if endpoint != "" {
-								resultsChan <- ResponseData{endpoint, resp}
-							}
-
-						}(srv, port, &wg)
-
+							SendHttpRequest(client, requestStr, resultsChan2, &wg2)
+							//logrus.Debug(srv.Target, ":", port, " Done")
+						}(srv, port, &wg2)
+						go func() {
+							respList = append(respList, <-resultsChan)
+						}()
 					}
+					wg2.Wait()
+					close(resultsChan2)
 				}
-				wg.Add(1)
+				wg1.Add(1)
 				go func(record define.Record, port string, wg *sync.WaitGroup) {
-					defer wg.Done()
+					//logrus.Debug(record.SvcDomain, ":", port, " Working")
 					requestStr := strings.Join([]string{record.SvcDomain, ":", port}, "")
-					endpoint, resp := SendHttpRequest(client, requestStr)
-					if endpoint != "" {
-						resultsChan <- ResponseData{endpoint, resp}
-					}
-				}(record, port, &wg)
+					SendHttpRequest(client, requestStr, resultsChan, wg)
+					//logrus.Debug(record.SvcDomain, ":", port, " Done")
+				}(record, port, &wg1)
+				go func() {
+					respList = append(respList, <-resultsChan)
+				}()
 			}
 		}
-		wg.Wait()
+		wg1.Wait()
 		close(resultsChan)
-
-		for data := range resultsChan { // 从channel中收集结果
-			if JudgeEndpoint(data.resp) {
-				resultList = append(resultList, data.url)
-			}
-		}
 	}
-	return resultList
+	return respList
 }
 
-func SendHttpRequest(client *http.Client, request string) (endpoint string, resp *http.Response) {
+func SendHttpRequest(client *http.Client, request string, resultsChan chan ResponseData, wg *sync.WaitGroup) {
+	defer wg.Done()
 	requestStr := strings.Join([]string{"http://", request}, "")
 	resp, err := client.Get(requestStr)
 	if err != nil {
 		requestStr = strings.Join([]string{"https://", request}, "")
 		resp, err = client.Get(requestStr)
 		if err != nil {
-			return "", resp
+			return
 		}
 	}
-	return requestStr, resp
+	if resp != nil {
+		contentType := resp.Header.Get("Content-Type")
+		resp.Header.Clone()
+		resp.Body.Close()
+		if contentType != "" {
+			resultsChan <- ResponseData{requestStr, contentType}
+		}
+	}
 }

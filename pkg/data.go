@@ -6,7 +6,6 @@ import (
 	"github.com/wgpsec/EndpointSearch/define"
 	"github.com/wgpsec/EndpointSearch/internal/config"
 	"github.com/wgpsec/EndpointSearch/utils/Error"
-	"net/http"
 	"os"
 	"regexp"
 	"strings"
@@ -68,14 +67,14 @@ func ParseRecordResult(recordList ...define.Record) (resultList []string) {
 	return resultList
 }
 
-func JudgeEndpoint(resp *http.Response) bool {
-	if resp == nil {
-		return false
+func JudgeEndpoint(respList ...ResponseData) (resultList []string) {
+	if len(respList) != 0 {
+		for _, resp := range respList {
+			isXML := strings.HasPrefix(resp.contentType, "text/xml") || strings.HasPrefix(resp.contentType, "application/xml")
+			if isXML {
+				resultList = append(resultList, resp.url)
+			}
+		}
 	}
-	contentType := resp.Header.Get("Content-Type")
-	isXML := strings.HasPrefix(contentType, "text/xml") || strings.HasPrefix(contentType, "application/xml")
-	if isXML {
-		return true
-	}
-	return false
+	return resultList
 }
