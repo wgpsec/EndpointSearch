@@ -2,7 +2,6 @@ package pkg
 
 import (
 	"fmt"
-	"github.com/wgpsec/EndpointSearch/define"
 	"net"
 	"net/http"
 	"strings"
@@ -14,43 +13,54 @@ type ResponseData struct {
 	contentType string
 }
 
-func SearchDomain(domainList ...string) (ipRecordList []define.IPRecord) {
+type IPRecord struct {
+	domain string
+	ip     []net.IP
+}
+
+type Record struct {
+	ip         []net.IP
+	svcDomain  string
+	srvRecords []*net.SRV
+}
+
+func SearchDomain(domainList ...string) (ipRecordList []IPRecord) {
 	if len(domainList) != 0 {
 		var answers []net.IP
 		for _, domain := range domainList {
 			answers, _ = net.LookupIP(domain)
 			if len(answers) != 0 {
-				ipRecordList = append(ipRecordList, define.IPRecord{Domain: domain, Ip: answers})
+				ipRecordList = append(ipRecordList, IPRecord{domain: domain, ip: answers})
 			}
 		}
 	}
 	return ipRecordList
 }
 
-func SearchSRVRecord(ipRecordList ...define.IPRecord) (recordList []define.Record) {
+func SearchSRVRecord(ipRecordList ...IPRecord) (recordList []Record) {
 	if len(ipRecordList) != 0 {
 		for _, ipRecord := range ipRecordList {
-			_, srv, err := net.LookupSRV(ipRecord.Domain, "tcp", "")
+			_, srv, err := net.LookupSRV(ipRecord.domain, "tcp", "")
 			if err != nil {
-				recordList = append(recordList, define.Record{Ip: ipRecord.Ip, SvcDomain: ipRecord.Domain})
+				recordList = append(recordList, Record{ip: ipRecord.ip, svcDomain: ipRecord.domain})
 			} else {
-				recordList = append(recordList, define.Record{Ip: ipRecord.Ip, SvcDomain: ipRecord.Domain, SrvRecords: srv})
+				recordList = append(recordList, Record{ip: ipRecord.ip, svcDomain: ipRecord.domain, srvRecords: srv})
 			}
 		}
 	}
 	return recordList
 }
 
-func SearchEndpoint(client *http.Client, portList []string, recordList ...define.Record) (respList []ResponseData) {
+func SearchEndpoint(client *http.Client, portList []string, recordList ...Record) (respList []ResponseData) {
 	if len(recordList) != 0 {
 		resultsChan := make(chan ResponseData, cap(recordList))
 		var wg1 sync.WaitGroup
 		var wg2 sync.WaitGroup
 		for _, record := range recordList {
 			for _, port := range portList {
-				if len(record.SrvRecords) != 0 {
-					resultsChan2 := make(chan ResponseData, cap(record.SrvRecords))
-					for _, srv := range record.SrvRecords {
+				if len(record.srvRecords) != 0 {
+					resultsChan2 := make(chan ResponseData, cap(record.srvRecords))
+					for _, srv := range record.srvRecords {
 						go func(srv *net.SRV, port string, wg *sync.WaitGroup) {
 							defer wg.Done()
 							//logrus.Debug(srv.Target, ":", port, " Working")
@@ -66,9 +76,9 @@ func SearchEndpoint(client *http.Client, portList []string, recordList ...define
 					close(resultsChan2)
 				}
 				wg1.Add(1)
-				go func(record define.Record, port string, wg *sync.WaitGroup) {
+				go func(record Record, port string, wg *sync.WaitGroup) {
 					//logrus.Debug(record.SvcDomain, ":", port, " Working")
-					requestStr := strings.Join([]string{record.SvcDomain, ":", port}, "")
+					requestStr := strings.Join([]string{record.svcDomain, ":", port}, "")
 					SendHttpRequest(client, requestStr, resultsChan, wg)
 					//logrus.Debug(record.SvcDomain, ":", port, " Done")
 				}(record, port, &wg1)

@@ -2,13 +2,12 @@ package pkg
 
 import (
 	"bufio"
-	"fmt"
-	"github.com/wgpsec/EndpointSearch/define"
-	"github.com/wgpsec/EndpointSearch/internal/config"
-	"github.com/wgpsec/EndpointSearch/utils/Error"
 	"os"
 	"regexp"
 	"strings"
+
+	"github.com/wgpsec/EndpointSearch/internal/config"
+	"github.com/wgpsec/EndpointSearch/utils/Error"
 )
 
 func ParseFileParameter(fileName string) (fileHostList []string) {
@@ -50,21 +49,6 @@ func ConvertToReqList(endpoint string, param ...string) (reqList []string) {
 		}
 	}
 	return reqList
-}
-
-func ParseRecordResult(recordList ...define.Record) (resultList []string) {
-	if len(recordList) != 0 {
-		for _, record := range recordList {
-			if len(record.SrvRecords) != 0 {
-				for _, srv := range record.SrvRecords {
-					result := strings.Join([]string{srv.Target, ":", fmt.Sprintf("%v", srv.Port)}, "")
-					resultList = append(resultList, result)
-				}
-			}
-			resultList = append(resultList, record.SvcDomain)
-		}
-	}
-	return resultList
 }
 
 func JudgeEndpoint(respList ...ResponseData) (resultList []string) {
