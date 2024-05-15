@@ -61,6 +61,7 @@ func SearchEndpoint(client *http.Client, portList []string, recordList ...Record
 				if len(record.srvRecords) != 0 {
 					resultsChan2 := make(chan ResponseData, cap(record.srvRecords))
 					for _, srv := range record.srvRecords {
+						wg2.Add(1)
 						go func(srv *net.SRV, port string, wg *sync.WaitGroup) {
 							defer wg.Done()
 							//logrus.Debug(srv.Target, ":", port, " Working")
