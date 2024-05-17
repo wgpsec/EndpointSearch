@@ -53,7 +53,7 @@ func SearchSRVRecord(ipRecordList ...IPRecord) (recordList []Record) {
 
 func SearchEndpoint(client *http.Client, portList []string, recordList ...Record) (respList []ResponseData) {
 	if len(recordList) != 0 {
-		resultsChan := make(chan ResponseData, cap(recordList))
+		resultsChan := make(chan ResponseData, cap(recordList)*cap(portList))
 		var wg1 sync.WaitGroup
 		var wg2 sync.WaitGroup
 		for _, record := range recordList {
@@ -69,12 +69,12 @@ func SearchEndpoint(client *http.Client, portList []string, recordList ...Record
 							SendHttpRequest(client, requestStr, resultsChan2, &wg2)
 							//logrus.Debug(srv.Target, ":", port, " Done")
 						}(srv, port, &wg2)
-						go func() {
-							respList = append(respList, <-resultsChan)
-						}()
 					}
 					wg2.Wait()
 					close(resultsChan2)
+					for resp := range resultsChan2 {
+						respList = append(respList, resp)
+					}
 				}
 				wg1.Add(1)
 				go func(record Record, port string, wg *sync.WaitGroup) {
@@ -83,13 +83,13 @@ func SearchEndpoint(client *http.Client, portList []string, recordList ...Record
 					SendHttpRequest(client, requestStr, resultsChan, wg)
 					//logrus.Debug(record.SvcDomain, ":", port, " Done")
 				}(record, port, &wg1)
-				go func() {
-					respList = append(respList, <-resultsChan)
-				}()
 			}
 		}
 		wg1.Wait()
 		close(resultsChan)
+		for resp := range resultsChan {
+			respList = append(respList, resp)
+		}
 	}
 	return respList
 }
