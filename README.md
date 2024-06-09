@@ -75,7 +75,7 @@ oss-legacy.example.com
 oss.example.com
 ```
 
-~~~~2. If the domain name exists, the system queries the srv records in the dns to discover the port
+2. If the domain name exists, the system queries the srv records in the dns to discover the port
 
 3. If srv records already exist, HTTP/HTTPS is used to request the URL instead of enumerating the port
 
