@@ -19,6 +19,7 @@ func WriteToFile(writeResultList []string, output string) {
 	sort.Strings(writeResultList)
 	if len(writeResultList) != 0 {
 		for _, i := range writeResultList {
+			fmt.Println("[+] service endpoint:", i)
 			fmt.Fprintln(writer, i)
 		}
 	}

@@ -24,14 +24,26 @@ type Record struct {
 	srvRecords []*net.SRV
 }
 
-func SearchDomain(domainList ...string) (ipRecordList []IPRecord) {
-	if len(domainList) != 0 {
+func SearchDomain(reqList ...string) (ipRecordList []IPRecord) {
+	if len(reqList) != 0 {
+		resultsChan := make(chan IPRecord, cap(reqList)*2)
+		var wg sync.WaitGroup
 		var answers []net.IP
-		for _, domain := range domainList {
-			answers, _ = net.LookupIP(domain)
-			if len(answers) != 0 {
-				ipRecordList = append(ipRecordList, IPRecord{domain: domain, ip: answers})
-			}
+		for _, domain := range reqList {
+			wg.Add(1)
+			go func(domain string, wg *sync.WaitGroup) {
+				defer wg.Done()
+				answers, _ = net.LookupIP(domain)
+				if len(answers) != 0 {
+					fmt.Printf("[+] %s\n", domain)
+					resultsChan <- IPRecord{domain, answers}
+				}
+			}(domain, &wg)
+		}
+		wg.Wait()
+		close(resultsChan)
+		for data := range resultsChan {
+			ipRecordList = append(ipRecordList, data)
 		}
 	}
 	return ipRecordList
@@ -44,6 +56,9 @@ func SearchSRVRecord(ipRecordList ...IPRecord) (recordList []Record) {
 			if err != nil {
 				recordList = append(recordList, Record{ip: ipRecord.ip, svcDomain: ipRecord.domain})
 			} else {
+				for _, srvRecord := range srv {
+					fmt.Printf("[+] %s:%v\n", srvRecord.Target, srvRecord.Port)
+				}
 				recordList = append(recordList, Record{ip: ipRecord.ip, svcDomain: ipRecord.domain, srvRecords: srv})
 			}
 		}
@@ -53,39 +68,27 @@ func SearchSRVRecord(ipRecordList ...IPRecord) (recordList []Record) {
 
 func SearchEndpoint(client *http.Client, portList []string, recordList ...Record) (respList []ResponseData) {
 	if len(recordList) != 0 {
-		resultsChan := make(chan ResponseData, cap(recordList)*cap(portList))
-		var wg1 sync.WaitGroup
-		var wg2 sync.WaitGroup
+		resultsChan := make(chan ResponseData, cap(recordList)*cap(portList)*10)
+		var wg sync.WaitGroup
 		for _, record := range recordList {
 			for _, port := range portList {
 				if len(record.srvRecords) != 0 {
-					resultsChan2 := make(chan ResponseData, cap(record.srvRecords))
 					for _, srv := range record.srvRecords {
-						wg2.Add(1)
-						go func(srv *net.SRV, port string, wg *sync.WaitGroup) {
-							defer wg.Done()
-							//logrus.Debug(srv.Target, ":", port, " Working")
+						wg.Add(1)
+						go func(srv *net.SRV, wg *sync.WaitGroup) {
 							requestStr := strings.Join([]string{srv.Target, ":", fmt.Sprintf("%v", srv.Port)}, "")
-							SendHttpRequest(client, requestStr, resultsChan2, &wg2)
-							//logrus.Debug(srv.Target, ":", port, " Done")
-						}(srv, port, &wg2)
-					}
-					wg2.Wait()
-					close(resultsChan2)
-					for resp := range resultsChan2 {
-						respList = append(respList, resp)
+							SendHttpRequest(client, requestStr, resultsChan, wg)
+						}(srv, &wg)
 					}
 				}
-				wg1.Add(1)
+				wg.Add(1)
 				go func(record Record, port string, wg *sync.WaitGroup) {
-					//logrus.Debug(record.SvcDomain, ":", port, " Working")
 					requestStr := strings.Join([]string{record.svcDomain, ":", port}, "")
 					SendHttpRequest(client, requestStr, resultsChan, wg)
-					//logrus.Debug(record.SvcDomain, ":", port, " Done")
-				}(record, port, &wg1)
+				}(record, port, &wg)
 			}
 		}
-		wg1.Wait()
+		wg.Wait()
 		close(resultsChan)
 		for resp := range resultsChan {
 			respList = append(respList, resp)
@@ -107,7 +110,6 @@ func SendHttpRequest(client *http.Client, request string, resultsChan chan Respo
 	}
 	if resp != nil {
 		contentType := resp.Header.Get("Content-Type")
-		resp.Header.Clone()
 		resp.Body.Close()
 		if contentType != "" {
 			resultsChan <- ResponseData{requestStr, contentType}

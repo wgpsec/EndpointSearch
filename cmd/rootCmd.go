@@ -29,26 +29,32 @@ var RootCmd = &cobra.Command{
 		`
 		github.com/wgpsec/EndpointSearch
 
-EndpointSearch 是一个探测云服务 endpoint 的扫描器
+EndpointSearch 是一个探测云服务端点的扫描器
 EndpointSearch is a scanner that probes the endpoint of a cloud service 
 `,
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		log.Init(logLevel)
 		if define.Url != "" && define.File != "" {
-			Error.HandleFatal(errors.New("参数不可以同时存在"))
+			Error.HandleFatal(errors.New("Url 参数和 File 参数不可以同时存在 (The Url parameter and File parameter cannot exist at the same time)"))
 			return
 		}
 		if define.Url == "" && define.File == "" {
-			Error.HandleFatal(errors.New("必选参数为空，请输入 -u 参数或 -f 参数"))
+			Error.HandleFatal(errors.New("必选参数为空，请输入 -u 参数或 -f 参数 (The mandatory parameter is empty. Enter the -u parameter or -f parameter)"))
 			return
 		}
 	},
 	Run: func(cmd *cobra.Command, args []string) {
-		if define.Endpoint == "" {
-			define.Endpoint = config.C.CloudEndpoint
+		if define.Service == "" {
+			define.Service = config.C.CloudService
 		}
 		if define.Port == "" {
 			define.Port = config.C.PortList
+		}
+		if define.Prefix == "" {
+			define.Prefix = config.C.Prefix
+		}
+		if define.Suffix == "" {
+			define.Suffix = config.C.Suffix
 		}
 		portList := strings.Split(define.Port, ",")
 
@@ -60,14 +66,17 @@ EndpointSearch is a scanner that probes the endpoint of a cloud service
 		}
 		hostList = Compare.RemoveDuplicates(hostList)
 
-		reqList := pkg.ConvertToReqList(define.Endpoint, hostList...)
+		reqList := pkg.ConvertToReqList(define.Service, define.Prefix, define.Suffix, hostList...)
+		fmt.Println("Domain exist:")
 		ipRecordList := pkg.SearchDomain(reqList...)
+		fmt.Println("Domain srv exist:")
 		recordList := pkg.SearchSRVRecord(ipRecordList...)
 
 		client := pkg.GenerateHTTPClient(define.TimeOut)
 		respList := pkg.SearchEndpoint(client, portList, recordList...)
 
 		resultList := Compare.RemoveDuplicates(pkg.JudgeEndpoint(respList...))
+		fmt.Println("Service endpoint exist:")
 		pkg.WriteToFile(resultList, define.OutPut)
 		fmt.Printf("[+] The output is in %s\n", define.OutPut)
 	},
@@ -81,7 +90,9 @@ func init() {
 	RootCmd.SetHelpFunc(customHelpFunc)
 	RootCmd.Flags().StringVarP(&define.File, "file", "f", "", "从文件中读取目标地址 (Input filename)")
 	RootCmd.Flags().StringVarP(&define.Url, "url", "u", "", "输入目标地址 (Input [domain|url])")
-	RootCmd.Flags().StringVarP(&define.Endpoint, "endpoint", "e", "", "输入需要被枚举的 endpoint (Input [endpoint])")
+	RootCmd.Flags().StringVarP(&define.Service, "service", "s", "", "输入需要被枚举的服务名称 (Input Service Name)")
+	RootCmd.Flags().StringVarP(&define.Prefix, "prefix", "", "", "输入需要被枚举的服务名称 (Input Service Name)")
+	RootCmd.Flags().StringVarP(&define.Suffix, "suffix", "", "", "输入需要被枚举的服务名称 (Input Service Name)")
 	RootCmd.Flags().IntVarP(&define.TimeOut, "timeout", "t", 2, "输入每个 http 请求的超时时间 (Enter the timeout period for every http request)")
 	RootCmd.Flags().StringVarP(&define.OutPut, "output", "o", "./result.txt", "输入结果文件输出的位置 (Enter the location of the scan result output)")
 	RootCmd.Flags().StringVarP(&define.Port, "port", "p", "", "输入需要被扫描的端口，逗号分割 (Enter the port to be scanned, separated by commas (,))")

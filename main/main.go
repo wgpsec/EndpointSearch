@@ -17,7 +17,7 @@ func init() {
 	_, err := File.FileCreateIfNonExist(configFile)
 	Error.HandleFatal(err)
 	config.Init(configFile)
-	if config.C.CloudEndpoint == "" || config.C.Mode == "" || config.C.PortList == "" {
+	if config.C.CloudService == "" || config.C.Mode == "" || config.C.PortList == "" || config.C.Mode2 == "" {
 		Error.HandleFatal(errors.New("请配置config.json"))
 		return
 	}
