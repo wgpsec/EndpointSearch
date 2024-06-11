@@ -81,21 +81,21 @@ oss.example.com
 ```
 Usage:
 
-  EndpointSearch [flags]
+EndpointSearch [flags]
 
 
 Flags:
 
-  -f, --file string       从文件中读取目标地址 (Input filename)
-  -h, --help              help for EndpointSearch
-      --logLevel string   设置日志等级 (Set log level) [trace|debug|info|warn|error|fatal|panic] (default "info")
-  -o, --output string     输入结果文件输出的位置 (Enter the location of the scan result output) (default "./result.txt")
-  -p, --port string       输入需要被扫描的端口，逗号分割 (Enter the port to be scanned, separated by commas (,))
-      --prefix string     输入需要被枚举的服务名称 (Input Service Name)
-  -s, --service string    输入需要被枚举的服务名称 (Input Service Name)
-      --suffix string     输入需要被枚举的服务名称 (Input Service Name)
-  -t, --timeout int       输入每个 http 请求的超时时间 (Enter the timeout period for every http request) (default 2)
-  -u, --url string        输入目标地址 (Input [domain|url])
+-f, --file string       从文件中读取目标地址 (Input filename)
+-h, --help              help for EndpointSearch
+--logLevel string   设置日志等级 (Set log level) [trace|debug|info|warn|error|fatal|panic] (default "info")
+-o, --output string     输入结果文件输出的位置 (Enter the location of the scan result output) (default "./result.txt")
+-p, --port string       输入需要被扫描的端口，逗号分割 (Enter the port to be scanned, separated by commas (,))
+--prefix string     输入枚举云服务的前缀 (Enter the prefix for enumerating the cloud service)
+-s, --service string    输入需要被枚举的服务名称 (Input Service Name)
+--suffix string     输入枚举云服务的后缀 (Enter a suffix for enumerating cloud services)
+-t, --timeout int       输入每个 http 请求的超时时间 (Enter the timeout period for every http request) (default 2)
+-u, --url string        输入目标地址 (Input [domain|url])
 ```
 EndpointSearch 同样支持手动覆盖配置参数，-e 参数默认为配置中的 CloudEndpoint，-p 参数为配置中的 PortList
 
