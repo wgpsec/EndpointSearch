@@ -116,7 +116,7 @@ func SendHttpRequest(client *http.Client, request string, resultsChan chan Respo
 			header = append(header, val...)
 		}
 		body := Network.HandleResponse(resp)
-
+		fmt.Printf("[+] %s\n", requestStr)
 		resultsChan <- ResponseData{requestStr, header, body}
 	}
 }

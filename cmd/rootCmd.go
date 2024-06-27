@@ -74,10 +74,11 @@ EndpointSearch is a scanner that probes the endpoint of a cloud service
 		recordList := pkg.SearchSRVRecord(ipRecordList...)
 
 		client := pkg.GenerateHTTPClient(define.TimeOut, define.ProxyURL)
+		fmt.Println("URL exist:")
 		respList := pkg.SearchEndpoint(client, portList, recordList...)
 
 		resultList := Compare.RemoveDuplicates(rule.JudgeEndpoint(respList...))
-		fmt.Println("Service endpoint exist:")
+		fmt.Println("Cloud Service Endpoint URL exist:")
 		pkg.WriteToFile(resultList, define.OutPut)
 		fmt.Printf("[+] The output is in %s\n", define.OutPut)
 	},
