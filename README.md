@@ -76,6 +76,8 @@ Multiple groups of rules can be defined. Header and Body in the Rule of each gro
 Note that if both Header and Body in a rule are empty, all HTTP requests will pass the rule
 
 ## Workflow
+![EndpointSearch](https://github.com/wgpsec/EndpointSearch/assets/50265741/bbe62843-ff98-46d8-85ad-5cb0ce1fcc51)
+
 1. Enter the domain name example.com. DNS is used to enumerate example.com.
 * Prefix + Mode2 + CloudService + Mode + Host
 * CloudService + Mode2 + Suffix + Mode + Host
