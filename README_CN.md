@@ -65,6 +65,8 @@ rules:
 注意，如果一个规则中的 Header 和 Body 均为空则会导致所有 HTTP 请求均会通过规则
 
 ## 工作流程
+![EndpointSearch](https://github.com/wgpsec/EndpointSearch/assets/50265741/6f3e1a9c-c0e1-4be8-9098-7c57336b3d08)
+
 1. 输入域名 example.com，首先会使用 DNS 去枚举 example.com，枚举方式遵循以下特点：
 * Prefix + Mode2 + CloudService + Mode + Host
 * CloudService + Mode2 + Suffix + Mode + Host
