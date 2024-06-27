@@ -34,23 +34,35 @@
 或使用Makefile进行编译二进制文件后使用
 
 ## 配置
-当首次运行 EndpointSearch 时，会检测 config.json 文件是否存在，不存在则会自动创建
+当首次运行 EndpointSearch 时，会检测 config.yaml 和 rule.yaml 是否存在，不存在则会生成默认的 config.yaml 和 rule.yaml
 
-config.json的填写内容应该如下：
+config.yaml 的填写内容如下：
 ```
-{
-	"CloudService":"oss,ecs",
-	"Mode":".",
-	"Mode2" :"-,.",
-	"PortList":"80,443",
-	"Prefix":"sonic,legacy,preprod,gamma,beta,staging",
-	"Suffix":"sonic,legacy,preprod,gamma,beta,staging",
-}
+CloudService: oss,ecs
+Mode: .
+Mode2: -,.
+PortList: 80,443
+Prefix: sonic,legacy,preprod,gamma,beta,staging
+Suffix: sonic,legacy,preprod,gamma,beta,staging
 ```
 CloudService 为枚举的云服务名称，Mode 是连接 CloudService 与 target 的方式，Mode2 是连接前后缀与 CloudService 的方式, PortList 为扫描的端口，具体例子见工作流程
 
+rule.yaml 的填写内容如下：
+```
+rules:
+    - Header:
+        - text/xml
+        - application/xml
+      Body:
+        - InvalidVersion
+    - Header:
+        - "123"
+      Body:
+        - ""
+```
+可定义多组 Rule，每组的 Rule 中的 Header 和 Body 均要完全匹配才会被判断为 Endpoint，如果仅有一种特征，可以将另一部分置空。
 
-CloudService 可参考我的另一个字典项目: https://github.com/shadowabi/S-BlastingDictionary/blob/main/CloudService.txt
+注意，如果一个规则中的 Header 和 Body 均为空则会导致所有 HTTP 请求均会通过规则
 
 ## 工作流程
 1. 输入域名 example.com，首先会使用 DNS 去枚举 example.com，枚举方式遵循以下特点：
@@ -69,35 +81,35 @@ oss.example.com
 
 3. 若已经存在 srv 记录，则不会去枚举端口，而是直接用 HTTP / HTTPS 协议去请求这个URL
 
-4. 否则将通过 HTTP 和 HTTPS 协议去尝试访问目标域名 + PortList 中的端口
+4. 否则将通过 HTTP 和 HTTPS 协议去尝试访问目标域名 + PortList 中的端口，如果使用了代理选项，可代理流量至代理服务器
 
-5. 最后通过 HTTP 的请求结果判断整个 URL 是否为 Endpoint，目前判断方式为：目标返回的数据是否为 xml 格式
+5. 最后通过 HTTP 的请求结果判断整个 URL 是否为 Endpoint，判断访问为判断请求流量是否命中 rule.yaml 中的规则
 
 如果有其他特征，欢迎在 Issues 中提出，或者直接发起 PR。
-
-判断 Endpoint 的方法在 pkg 目录 data.go 的 JudgeEndpoint 函数中实现
 
 ## 用法
 ```
 Usage:
 
-EndpointSearch [flags]
+  EndpointSearch [flags]
 
 
 Flags:
 
--f, --file string       从文件中读取目标地址 (Input filename)
--h, --help              help for EndpointSearch
---logLevel string   设置日志等级 (Set log level) [trace|debug|info|warn|error|fatal|panic] (default "info")
--o, --output string     输入结果文件输出的位置 (Enter the location of the scan result output) (default "./result.txt")
--p, --port string       输入需要被扫描的端口，逗号分割 (Enter the port to be scanned, separated by commas (,))
---prefix string     输入枚举云服务的前缀 (Enter the prefix for enumerating the cloud service)
--s, --service string    输入需要被枚举的服务名称 (Input Service Name)
---suffix string     输入枚举云服务的后缀 (Enter a suffix for enumerating cloud services)
--t, --timeout int       输入每个 http 请求的超时时间 (Enter the timeout period for every http request) (default 2)
--u, --url string        输入目标地址 (Input [domain|url])
+  -f, --file string       从文件中读取目标地址 (Input filename)
+  -h, --help              help for EndpointSearch
+      --logLevel string   设置日志等级 (Set log level) [trace|debug|info|warn|error|fatal|panic] (default "info")
+  -o, --output string     输入结果文件输出的位置 (Enter the location of the scan result output) (default "./result.txt")
+  -p, --port string       输入需要被扫描的端口，逗号分割 (Enter the port to be scanned, separated by commas (,))
+      --prefix string     输入枚举云服务的前缀 (Enter the prefix for enumerating the cloud service)
+      --proxy string      使用 HTTP/SOCKS5代理，仅限web探测时 (List of http/socks5 proxy to use,Only for web detection
+  -s, --service string    输入需要被枚举的服务名称 (Input Service Name)
+      --suffix string     输入枚举云服务的后缀 (Enter a suffix for enumerating cloud services)
+  -t, --timeout int       输入每个 http 请求的超时时间 (Enter the timeout period for every http request) (default 2)
+  -u, --url string        输入目标地址 (Input [domain|url])
 ```
-EndpointSearch 同样支持手动覆盖配置参数，-e 参数默认为配置中的 CloudEndpoint，-p 参数为配置中的 PortList
+
+EndpointSearch 同样支持手动覆盖配置参数，例如 -e 参数默认为配置中的 CloudEndpoint，-p 参数为配置中的 PortList
 
 当主动指定参数后，将不再使用配置文件中的默认值
 
@@ -105,10 +117,10 @@ EndpointSearch 同样支持手动覆盖配置参数，-e 参数默认为配置�
 
 1. 利用 dns 服务枚举端点，隐蔽侦查
 2. 当域名存在时，自动探测 srv 服务发现端口
-3. 自动去重
-4. 输入的 url 将自动提取为域名
+3. 支持 HTTP / SOCSK5 代理
+4. 自动去重
+5. 输入的 url 将自动提取为域名
 
 ## TODO
-1. 添加 socket5 代理的支持
-2. 更多判断 Endpoint 的方法
+1. 增加更多判断 Endpoint 的方法
 

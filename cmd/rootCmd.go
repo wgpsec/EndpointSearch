@@ -1,9 +1,10 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
+	"github.com/wgpsec/EndpointSearch/rule"
 	"os"
+	"runtime"
 	"strings"
 
 	"github.com/wgpsec/EndpointSearch/define"
@@ -35,11 +36,11 @@ EndpointSearch is a scanner that probes the endpoint of a cloud service
 	PersistentPreRun: func(cmd *cobra.Command, args []string) {
 		log.Init(logLevel)
 		if define.Url != "" && define.File != "" {
-			Error.HandleFatal(errors.New("Url 参数和 File 参数不可以同时存在 (The Url parameter and File parameter cannot exist at the same time)"))
+			Error.HandleFatal(fmt.Errorf("Url 参数和 File 参数不可以同时存在 (The Url parameter and File parameter cannot exist at the same time)"))
 			return
 		}
 		if define.Url == "" && define.File == "" {
-			Error.HandleFatal(errors.New("必选参数为空，请输入 -u 参数或 -f 参数 (The mandatory parameter is empty. Enter the -u parameter or -f parameter)"))
+			Error.HandleFatal(fmt.Errorf("必选参数为空，请输入 -u 参数或 -f 参数 (The mandatory parameter is empty. Enter the -u parameter or -f parameter)"))
 			return
 		}
 	},
@@ -72,10 +73,10 @@ EndpointSearch is a scanner that probes the endpoint of a cloud service
 		fmt.Println("Domain srv exist:")
 		recordList := pkg.SearchSRVRecord(ipRecordList...)
 
-		client := pkg.GenerateHTTPClient(define.TimeOut)
+		client := pkg.GenerateHTTPClient(define.TimeOut, define.ProxyURL)
 		respList := pkg.SearchEndpoint(client, portList, recordList...)
 
-		resultList := Compare.RemoveDuplicates(pkg.JudgeEndpoint(respList...))
+		resultList := Compare.RemoveDuplicates(rule.JudgeEndpoint(respList...))
 		fmt.Println("Service endpoint exist:")
 		pkg.WriteToFile(resultList, define.OutPut)
 		fmt.Printf("[+] The output is in %s\n", define.OutPut)
@@ -96,17 +97,21 @@ func init() {
 	RootCmd.Flags().IntVarP(&define.TimeOut, "timeout", "t", 2, "输入每个 http 请求的超时时间 (Enter the timeout period for every http request)")
 	RootCmd.Flags().StringVarP(&define.OutPut, "output", "o", "./result.txt", "输入结果文件输出的位置 (Enter the location of the scan result output)")
 	RootCmd.Flags().StringVarP(&define.Port, "port", "p", "", "输入需要被扫描的端口，逗号分割 (Enter the port to be scanned, separated by commas (,))")
+	RootCmd.Flags().StringVarP(&define.ProxyURL, "proxy", "", "", "使用 HTTP/SOCKS5代理，仅限web探测时 (List of http/socks5 proxy to use,Only for web detection")
 }
 
 func Execute() {
-	cc.Init(&cc.Config{
-		RootCmd:  RootCmd,
-		Headings: cc.HiGreen + cc.Underline,
-		Commands: cc.Cyan + cc.Bold,
-		Example:  cc.Italic,
-		ExecName: cc.Bold,
-		Flags:    cc.Cyan + cc.Bold,
-	})
+	if runtime.GOOS != "windows" {
+		cc.Init(&cc.Config{
+			RootCmd:  RootCmd,
+			Headings: cc.HiGreen + cc.Underline,
+			Commands: cc.Cyan + cc.Bold,
+			Example:  cc.Italic,
+			ExecName: cc.Bold,
+			Flags:    cc.Cyan + cc.Bold,
+		})
+	}
+
 	err := RootCmd.Execute()
 	if err != nil {
 		os.Exit(1)

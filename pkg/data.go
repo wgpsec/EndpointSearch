@@ -76,15 +76,3 @@ func GenerateReqString(service string, prefix string, suffix string, host string
 	}
 	return reqList
 }
-
-func JudgeEndpoint(respList ...ResponseData) (resultList []string) {
-	if len(respList) != 0 {
-		for _, resp := range respList {
-			isXML := strings.HasPrefix(resp.contentType, "text/xml") || strings.HasPrefix(resp.contentType, "application/xml")
-			if isXML {
-				resultList = append(resultList, resp.url)
-			}
-		}
-	}
-	return resultList
-}

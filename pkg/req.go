@@ -2,6 +2,7 @@ package pkg
 
 import (
 	"fmt"
+	"github.com/wgpsec/EndpointSearch/utils/Network"
 	"net"
 	"net/http"
 	"strings"
@@ -9,19 +10,20 @@ import (
 )
 
 type ResponseData struct {
-	url         string
-	contentType string
+	Url    string
+	Header []string
+	Body   string
 }
 
 type IPRecord struct {
-	domain string
-	ip     []net.IP
+	Domain string
+	Ip     []net.IP
 }
 
 type Record struct {
-	ip         []net.IP
-	svcDomain  string
-	srvRecords []*net.SRV
+	Ip         []net.IP
+	SvcDomain  string
+	SrvRecords []*net.SRV
 }
 
 func SearchDomain(reqList ...string) (ipRecordList []IPRecord) {
@@ -52,14 +54,14 @@ func SearchDomain(reqList ...string) (ipRecordList []IPRecord) {
 func SearchSRVRecord(ipRecordList ...IPRecord) (recordList []Record) {
 	if len(ipRecordList) != 0 {
 		for _, ipRecord := range ipRecordList {
-			_, srv, err := net.LookupSRV(ipRecord.domain, "tcp", "")
+			_, srv, err := net.LookupSRV(ipRecord.Domain, "tcp", "")
 			if err != nil {
-				recordList = append(recordList, Record{ip: ipRecord.ip, svcDomain: ipRecord.domain})
+				recordList = append(recordList, Record{Ip: ipRecord.Ip, SvcDomain: ipRecord.Domain})
 			} else {
 				for _, srvRecord := range srv {
 					fmt.Printf("[+] %s:%v\n", srvRecord.Target, srvRecord.Port)
 				}
-				recordList = append(recordList, Record{ip: ipRecord.ip, svcDomain: ipRecord.domain, srvRecords: srv})
+				recordList = append(recordList, Record{Ip: ipRecord.Ip, SvcDomain: ipRecord.Domain, SrvRecords: srv})
 			}
 		}
 	}
@@ -72,8 +74,8 @@ func SearchEndpoint(client *http.Client, portList []string, recordList ...Record
 		var wg sync.WaitGroup
 		for _, record := range recordList {
 			for _, port := range portList {
-				if len(record.srvRecords) != 0 {
-					for _, srv := range record.srvRecords {
+				if len(record.SrvRecords) != 0 {
+					for _, srv := range record.SrvRecords {
 						wg.Add(1)
 						go func(srv *net.SRV, wg *sync.WaitGroup) {
 							requestStr := strings.Join([]string{srv.Target, ":", fmt.Sprintf("%v", srv.Port)}, "")
@@ -83,7 +85,7 @@ func SearchEndpoint(client *http.Client, portList []string, recordList ...Record
 				}
 				wg.Add(1)
 				go func(record Record, port string, wg *sync.WaitGroup) {
-					requestStr := strings.Join([]string{record.svcDomain, ":", port}, "")
+					requestStr := strings.Join([]string{record.SvcDomain, ":", port}, "")
 					SendHttpRequest(client, requestStr, resultsChan, wg)
 				}(record, port, &wg)
 			}
@@ -109,10 +111,12 @@ func SendHttpRequest(client *http.Client, request string, resultsChan chan Respo
 		}
 	}
 	if resp != nil {
-		contentType := resp.Header.Get("Content-Type")
-		resp.Body.Close()
-		if contentType != "" {
-			resultsChan <- ResponseData{requestStr, contentType}
+		var header []string
+		for _, val := range resp.Header {
+			header = append(header, val...)
 		}
+		body := Network.HandleResponse(resp)
+
+		resultsChan <- ResponseData{requestStr, header, body}
 	}
 }
